@@ -1,0 +1,20 @@
+{
+  "name": "order-delivery-server",
+  "version": "1.0.0",
+  "description": "Order & delivery tracking backend for personal shopper / import business",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js",
+    "import": "node src/import.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "xlsx": "^0.18.5"
+  }
+}

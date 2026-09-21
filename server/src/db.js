@@ -13,7 +13,9 @@ const dataDir = process.env.DATA_DIR || path.join(__dirname, "..", "data");
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const dbPath = path.join(dataDir, "app.db");
-const db = new DatabaseSync(dbPath);
+const seedPath = path.join(__dirname, "..", "seed", "app.db");
+
+let db = new DatabaseSync(dbPath);
 db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
 
@@ -54,6 +56,24 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_tracking ON order_items(tracking_no);
 `);
+
+// On a host with a persistent Volume (e.g. Railway), DATA_DIR points at a
+// disk that starts out with an empty database — the schema above creates
+// the (empty) tables, but there's no data. If a pre-loaded seed copy shipped
+// with the code and the database is genuinely empty (no customers yet),
+// load the seed data in. This only fires when the customers table has zero
+// rows, so it never touches or overwrites anything you've since added.
+if (fs.existsSync(seedPath)) {
+  const { count } = db.prepare("SELECT COUNT(*) AS count FROM customers").get();
+  if (count === 0) {
+    db.close();
+    fs.copyFileSync(seedPath, dbPath);
+    console.log(`Database at ${dbPath} was empty — seeded it from ${seedPath}.`);
+    db = new DatabaseSync(dbPath);
+    db.exec("PRAGMA journal_mode = WAL");
+    db.exec("PRAGMA foreign_keys = ON");
+  }
+}
 
 // Small shim matching better-sqlite3's db.transaction(fn) API, since
 // node:sqlite doesn't ship one itself: returns a function that runs `fn`

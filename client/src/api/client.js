@@ -85,4 +85,9 @@ export const api = {
   updateItem: (orderId, itemId, item) =>
     request(`/orders/${orderId}/items/${itemId}`, { method: "PUT", body: JSON.stringify(item) }),
   deleteItem: (orderId, itemId) => request(`/orders/${orderId}/items/${itemId}`, { method: "DELETE" }),
+
+  // Users (admin accounts that can sign in to this app)
+  getUsers: () => request("/users"),
+  createUser: (data) => request("/users", { method: "POST", body: JSON.stringify(data) }),
+  deleteUser: (id) => request(`/users/${id}`, { method: "DELETE" }),
 };

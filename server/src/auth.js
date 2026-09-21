@@ -1,9 +1,11 @@
 // Minimal session-token auth — no extra dependency, just Node's built-in
 // crypto. A token is base64url(payload) + "." + HMAC-SHA256(payload) using
-// a secret only the server knows. There's exactly one admin account,
-// configured entirely through environment variables — this app has no user
-// database, just you.
+// a secret only the server knows. Accounts live in the users table (see
+// db.js); the very first one is bootstrapped from ADMIN_USERNAME/
+// ADMIN_PASSWORD, and more can be added from the app's Users page.
 const crypto = require("crypto");
+const db = require("./db");
+const { verifyPassword } = require("./passwords");
 
 const SECRET = process.env.JWT_SECRET || "dev-only-insecure-secret-change-me";
 const SHORT_SESSION_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -44,27 +46,15 @@ function issueToken(username, rememberMe) {
 }
 
 function checkCredentials(username, password) {
-  const expectedUser = process.env.ADMIN_USERNAME;
-  const expectedPass = process.env.ADMIN_PASSWORD;
-  if (!expectedUser || !expectedPass) {
-    // Misconfigured server — fail closed, not open.
+  if (!username || !password) return false;
+  const user = db.prepare("SELECT * FROM users WHERE username = ?").get(username);
+  if (!user) {
+    // Still do a dummy hash so a nonexistent-vs-wrong-password response
+    // takes about the same time either way.
+    verifyPassword(String(password), "0".repeat(32) + ":" + "0".repeat(128));
     return false;
   }
-  const userOk = timingSafeStringEqual(username || "", expectedUser);
-  const passOk = timingSafeStringEqual(password || "", expectedPass);
-  return userOk && passOk;
-}
-
-function timingSafeStringEqual(a, b) {
-  const aBuf = Buffer.from(String(a));
-  const bBuf = Buffer.from(String(b));
-  if (aBuf.length !== bBuf.length) {
-    // Still run a comparison of equal length buffers so failure timing
-    // doesn't leak the correct length.
-    crypto.timingSafeEqual(aBuf, aBuf);
-    return false;
-  }
-  return crypto.timingSafeEqual(aBuf, bBuf);
+  return verifyPassword(password, user.password_hash);
 }
 
 // Express middleware: requires a valid "Authorization: Bearer <token>" header.

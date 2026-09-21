@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import Customers from "./pages/Customers";
 import CustomerDetail from "./pages/CustomerDetail";
 import Orders from "./pages/Orders";
+import Users from "./pages/Users";
 import { api, getToken, AUTH_EVENT } from "./api/client";
 
 function RequireAuth({ signedIn, children }) {
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/customers" element={<Customers />} />
         <Route path="/customers/:id" element={<CustomerDetail />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/users" element={<Users />} />
       </Route>
     </Routes>
   );

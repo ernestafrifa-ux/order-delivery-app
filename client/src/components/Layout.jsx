@@ -45,6 +45,9 @@ export default function Layout({ onSignOut }) {
           <NavLink to="/orders" style={linkStyle}>
             Orders &amp; Delivery
           </NavLink>
+          <NavLink to="/users" style={linkStyle}>
+            Users
+          </NavLink>
         </nav>
         <button onClick={handleSignOut} style={{ marginLeft: "auto", fontSize: 13 }}>
           Sign out

@@ -7,6 +7,7 @@ const authRouter = require("./routes/auth");
 const customersRouter = require("./routes/customers");
 const ordersRouter = require("./routes/orders");
 const dashboardRouter = require("./routes/dashboard");
+const usersRouter = require("./routes/users");
 
 const app = express();
 app.use(cors());
@@ -19,6 +20,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/customers", requireAuth, customersRouter);
 app.use("/api/orders", requireAuth, ordersRouter);
 app.use("/api/dashboard", requireAuth, dashboardRouter);
+app.use("/api/users", requireAuth, usersRouter);
 
 // Basic error handler so a bad request doesn't crash the server.
 app.use((err, req, res, next) => {

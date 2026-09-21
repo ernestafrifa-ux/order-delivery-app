@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const { DatabaseSync } = require("node:sqlite");
+const { hashPassword } = require("./passwords");
 
 // Uses Node's built-in SQLite module (stable since Node 22.5+) instead of a
 // native addon like better-sqlite3, so `npm install` never needs a C++
@@ -19,7 +20,11 @@ let db = new DatabaseSync(dbPath);
 db.exec("PRAGMA journal_mode = WAL");
 db.exec("PRAGMA foreign_keys = ON");
 
-db.exec(`
+// Every CREATE TABLE the app needs. Called again below if the seed copy
+// fires, since the reopened connection points at a different file (the
+// seed file) that may predate newer tables such as `users`.
+function ensureSchema() {
+  db.exec(`
 CREATE TABLE IF NOT EXISTS customers (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
@@ -55,7 +60,17 @@ CREATE TABLE IF NOT EXISTS order_items (
 CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_tracking ON order_items(tracking_no);
+
+CREATE TABLE IF NOT EXISTS users (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 `);
+}
+
+ensureSchema();
 
 // On a host with a persistent Volume (e.g. Railway), DATA_DIR points at a
 // disk that starts out with an empty database — the schema above creates
@@ -63,6 +78,9 @@ CREATE INDEX IF NOT EXISTS idx_order_items_tracking ON order_items(tracking_no);
 // with the code and the database is genuinely empty (no customers yet),
 // load the seed data in. This only fires when the customers table has zero
 // rows, so it never touches or overwrites anything you've since added.
+// Do this BEFORE the user-bootstrap step below, since it swaps out the
+// entire database file (and, on an older seed file, may not yet have a
+// `users` table until ensureSchema() re-runs against the new connection).
 if (fs.existsSync(seedPath)) {
   const { count } = db.prepare("SELECT COUNT(*) AS count FROM customers").get();
   if (count === 0) {
@@ -72,6 +90,25 @@ if (fs.existsSync(seedPath)) {
     db = new DatabaseSync(dbPath);
     db.exec("PRAGMA journal_mode = WAL");
     db.exec("PRAGMA foreign_keys = ON");
+    ensureSchema(); // the seed file may predate tables added since it was captured
+  }
+}
+
+// Bootstrap the very first account from ADMIN_USERNAME/ADMIN_PASSWORD (the
+// env vars used before multi-user support existed) so nobody gets locked
+// out when this code first runs against an existing deployment. Only fires
+// once — as soon as any user exists, new accounts are created from the
+// admin page instead, and these env vars are no longer read for login.
+// Runs LAST, against the final (possibly seeded, definitely schema'd)
+// connection, so the seed-copy step above can never wipe it out.
+{
+  const { count: userCount } = db.prepare("SELECT COUNT(*) AS count FROM users").get();
+  if (userCount === 0 && process.env.ADMIN_USERNAME && process.env.ADMIN_PASSWORD) {
+    db.prepare("INSERT INTO users (username, password_hash) VALUES (?, ?)").run(
+      process.env.ADMIN_USERNAME,
+      hashPassword(process.env.ADMIN_PASSWORD)
+    );
+    console.log(`No users yet — created initial account "${process.env.ADMIN_USERNAME}" from ADMIN_USERNAME/ADMIN_PASSWORD.`);
   }
 }
 

@@ -9,6 +9,9 @@ export default function Customers() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", location: "", notes: "" });
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", location: "", notes: "" });
+  const [editSaving, setEditSaving] = useState(false);
 
   function load() {
     api.getCustomers().then(setCustomers).catch((e) => setError(e.message));
@@ -29,6 +32,35 @@ export default function Customers() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  function startEdit(c) {
+    setEditingId(c.id);
+    setEditForm({ name: c.name || "", phone: c.phone || "", location: c.location || "", notes: c.notes || "" });
+  }
+
+  async function saveEdit(id) {
+    if (!editForm.name.trim()) return;
+    setEditSaving(true);
+    try {
+      await api.updateCustomer(id, editForm);
+      setEditingId(null);
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDelete(c) {
+    if (!confirm(`Delete ${c.name} and all their orders? This can't be undone.`)) return;
+    try {
+      await api.deleteCustomer(c.id);
+      load();
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -107,24 +139,75 @@ export default function Customers() {
             </tr>
           </thead>
           <tbody>
-            {filtered.map((c) => (
-              <tr key={c.id} style={{ borderTop: "1px solid #eef2f7" }}>
-                <td style={td}>{c.name}</td>
-                <td style={td}>{c.phone || "—"}</td>
-                <td style={td}>{c.order_count}</td>
-                <td style={td}>{c.item_count}</td>
-                <td style={td}>
-                  {c.pending_delivery > 0 ? (
-                    <span style={{ color: "#b45309", fontWeight: 600 }}>{c.pending_delivery}</span>
-                  ) : (
-                    "0"
-                  )}
-                </td>
-                <td style={td}>
-                  <Link to={`/customers/${c.id}`}>View →</Link>
-                </td>
-              </tr>
-            ))}
+            {filtered.map((c) =>
+              editingId === c.id ? (
+                <tr key={c.id} style={{ borderTop: "1px solid #eef2f7", background: "#fafaff" }}>
+                  <td style={td}>
+                    <input
+                      style={inputSm}
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="Name *"
+                    />
+                  </td>
+                  <td style={td}>
+                    <input
+                      style={inputSm}
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      placeholder="Phone"
+                    />
+                  </td>
+                  <td style={td} colSpan={2}>
+                    <input
+                      style={inputSm}
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                      placeholder="Location"
+                    />
+                  </td>
+                  <td style={td}>
+                    <input
+                      style={inputSm}
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                      placeholder="Notes"
+                    />
+                  </td>
+                  <td style={td}>
+                    <button onClick={() => saveEdit(c.id)} disabled={editSaving} style={btnSm}>
+                      {editSaving ? "Saving…" : "Save"}
+                    </button>{" "}
+                    <button onClick={() => setEditingId(null)} style={btnSm}>
+                      Cancel
+                    </button>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={c.id} style={{ borderTop: "1px solid #eef2f7" }}>
+                  <td style={td}>{c.name}</td>
+                  <td style={td}>{c.phone || "—"}</td>
+                  <td style={td}>{c.order_count}</td>
+                  <td style={td}>{c.item_count}</td>
+                  <td style={td}>
+                    {c.pending_delivery > 0 ? (
+                      <span style={{ color: "#b45309", fontWeight: 600 }}>{c.pending_delivery}</span>
+                    ) : (
+                      "0"
+                    )}
+                  </td>
+                  <td style={{ ...td, whiteSpace: "nowrap" }}>
+                    <Link to={`/customers/${c.id}`}>View →</Link>{" "}
+                    <button onClick={() => startEdit(c)} style={btnSm}>
+                      Edit
+                    </button>{" "}
+                    <button onClick={() => handleDelete(c)} style={{ ...btnSm, color: "#b91c1c" }}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            )}
             {filtered.length === 0 && (
               <tr>
                 <td style={td} colSpan={6}>
@@ -141,3 +224,5 @@ export default function Customers() {
 
 const th = { padding: "10px 14px", fontSize: 13, color: "#475569" };
 const td = { padding: "10px 14px", fontSize: 14 };
+const inputSm = { width: "100%", fontSize: 13, padding: "4px 6px" };
+const btnSm = { fontSize: 12, padding: "3px 8px" };

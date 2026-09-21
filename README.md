@@ -37,6 +37,26 @@ server/   Express API + SQLite database + Excel importer
 client/   React app (Vite)
 ```
 
+## Authentication
+
+The app has one admin account, configured entirely through environment
+variables — there's no user database, just you. Requests to any API route
+except `/api/health` and `/api/auth/login` require a signed-in session
+(a token issued at login, sent as an `Authorization: Bearer <token>` header
+and stored in the browser automatically).
+
+Three environment variables control it, all required:
+
+- `ADMIN_USERNAME` — whatever username you want to sign in with.
+- `ADMIN_PASSWORD` — whatever password you want. Change this to something
+  you wouldn't mind a stranger *not* guessing, since the app is reachable
+  from the internet once deployed.
+- `JWT_SECRET` — a random string used to sign session tokens. Any long
+  random text works; it doesn't need to be memorable, just kept private.
+
+Without these set, the server "fails closed" — login always rejects rather
+than silently allowing anyone in.
+
 ## First-time setup
 
 ### 1. Backend
@@ -44,6 +64,22 @@ client/   React app (Vite)
 ```bash
 cd server
 npm install
+```
+
+Set the three auth variables before starting it. On Windows (cmd):
+
+```bash
+set ADMIN_USERNAME=youradminname
+set ADMIN_PASSWORD=yourpassword
+set JWT_SECRET=some-long-random-string
+```
+
+Or PowerShell:
+
+```powershell
+$env:ADMIN_USERNAME="youradminname"
+$env:ADMIN_PASSWORD="yourpassword"
+$env:JWT_SECRET="some-long-random-string"
 ```
 
 If you want to start from your existing spreadsheet data (customers, items,
@@ -57,7 +93,7 @@ This creates `server/data/app.db` (SQLite file) and reads every sheet as one
 customer, each row as one item, grouping items into orders by the order date
 on each row.
 
-Then start the API:
+Then start the API (in the same terminal, so it keeps the variables you just set):
 
 ```bash
 npm start
@@ -159,7 +195,9 @@ In Railway: **New Project → Deploy from GitHub repo** → pick this repo.
 - **Settings → Start Command**: `npm start`
 - **Add a Volume** (Settings → Volumes → New Volume): mount path `/data`
   — this is what makes your customer/order data survive redeploys.
-- **Variables**: add `DATA_DIR` = `/data`
+- **Variables**: add `DATA_DIR` = `/data`, plus `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
+  and `JWT_SECRET` (see "Authentication" above) — without these, nobody can
+  log in to the deployed app.
 - Deploy, then open **Settings → Networking → Generate Domain** to get a
   public URL, something like `https://order-delivery-api-production.up.railway.app`.
 

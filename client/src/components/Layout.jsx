@@ -1,4 +1,5 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { api } from "../api/client";
 
 const linkStyle = ({ isActive }) => ({
   padding: "8px 14px",
@@ -9,7 +10,15 @@ const linkStyle = ({ isActive }) => ({
   background: isActive ? "#2563eb" : "transparent",
 });
 
-export default function Layout() {
+export default function Layout({ onSignOut }) {
+  const navigate = useNavigate();
+
+  function handleSignOut() {
+    api.logout();
+    onSignOut?.();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
       <header
@@ -37,6 +46,9 @@ export default function Layout() {
             Orders &amp; Delivery
           </NavLink>
         </nav>
+        <button onClick={handleSignOut} style={{ marginLeft: "auto", fontSize: 13 }}>
+          Sign out
+        </button>
       </header>
       <main style={{ flex: 1, padding: 24, background: "#f8fafc" }}>
         <Outlet />

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../api/client";
+import logo from "../assets/bengazy-logo.jpg";
 
 export default function Login({ onSignedIn }) {
   const [username, setUsername] = useState("");
@@ -35,7 +36,7 @@ export default function Login({ onSignedIn }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#faf6ee",
+        background: "linear-gradient(180deg, #0a2a5e 0%, #0d3b7a 45%, #0a2a5e 100%)",
         padding: 16,
       }}
     >
@@ -45,26 +46,31 @@ export default function Login({ onSignedIn }) {
           background: "#fff",
           borderRadius: 20,
           padding: "36px 32px",
-          width: 360,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.06)",
+          width: 380,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.15), 0 12px 32px rgba(0,0,0,0.3)",
           textAlign: "center",
         }}
       >
-        <div
+        <img
+          src={logo}
+          alt="Bengazy Shipping"
           style={{
-            fontSize: 40,
-            width: 64,
-            height: 64,
-            margin: "0 auto 16px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            width: 96,
+            height: 96,
+            objectFit: "contain",
+            margin: "0 auto 14px",
+            display: "block",
           }}
-        >
-          📦
-        </div>
-        <h1 style={{ margin: 0, fontSize: 22, fontFamily: "Georgia, serif" }}>Order &amp; Delivery Tracker</h1>
-        <p style={{ color: "#78716c", marginTop: 6, marginBottom: 28, fontSize: 14 }}>Sign in to manage your orders</p>
+        />
+        <h1 style={{ margin: 0, fontSize: 24, fontFamily: "Georgia, serif", color: "#0a2a5e", letterSpacing: 0.3 }}>
+          Bengazy Shipping
+        </h1>
+        <p style={{ color: "#c9a227", marginTop: 4, marginBottom: 4, fontSize: 13, fontWeight: 700, letterSpacing: 0.4 }}>
+          YOUR GOODS, OUR RESPONSIBILITY
+        </p>
+        <p style={{ color: "#78716c", marginTop: 10, marginBottom: 26, fontSize: 14 }}>
+          Sign in to manage orders &amp; deliveries
+        </p>
 
         {error && (
           <div
@@ -147,7 +153,7 @@ export default function Login({ onSignedIn }) {
             padding: "12px 0",
             borderRadius: 999,
             border: "none",
-            background: "#1c2b1e",
+            background: "#0a2a5e",
             color: "#fff",
             fontWeight: 600,
             fontSize: 15,
